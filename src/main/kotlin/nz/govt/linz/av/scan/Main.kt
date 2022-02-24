@@ -22,7 +22,7 @@ suspend fun main(args: Array<String>){
             var httpResponse = scanFile(Url("https://testapi.cloudmersive.com/virus/scan/file"), it)
             val stringBody: ScanResponse = httpResponse.receive<ScanResponse>()
             println(httpResponse.status.value)
-            println(stringBody)
+            //println(stringBody)
         }
         println("Normal Scanning File Name ${it.name}, Size ${it.length()/1024} kb, AV scanning time $elapsed")
 
@@ -30,10 +30,9 @@ suspend fun main(args: Array<String>){
             println("Advanced Scanning " + it.name)
             var advanceScanResponse =
                 scanFileAdvance(Url("https://testapi.cloudmersive.com/virus/scan/file/advanced"), it)
-            println(advanceScanResponse.receive<String>())
             var advanceScanResponseBody: ScanResponse = advanceScanResponse.receive<ScanResponse>()
             println(advanceScanResponse.status.value)
-            println(advanceScanResponseBody)
+            //println(advanceScanResponseBody)
         }
         println("Advance Scanning File Name ${it.name}, Size ${it.length()/1024} kb, AV scanning time $elapsedAdvancedScan")
     }

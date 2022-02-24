@@ -9,24 +9,34 @@ import io.ktor.http.*
 import io.ktor.utils.io.core.*
 import nz.govt.linz.av.scan.data.ScanResponse
 import java.io.File
+import kotlin.system.measureTimeMillis
 
 suspend fun main(args: Array<String>){
     var fileList = mutableMapOf<String, File>()
-    fileList.put("test", File("C:/Users/BVenkadachalam/code/bala/typescript/demo-one/app.js"))
 
-    println("Normal Scanning")
-    var httpResponse = scanFile(Url("https://testapi.cloudmersive.com/virus/scan/file"), fileList)
-    val stringBody: ScanResponse = httpResponse.receive<ScanResponse>()
+    val file = File("C:\\Users\\BVenkadachalam\\code\\bala\\avscan");
+    println(file.isDirectory)
+    file.listFiles().forEach {
 
-    println(httpResponse.status.value)
-    println(stringBody)
+        val elapsed = measureTimeMillis {
+            var httpResponse = scanFile(Url("https://testapi.cloudmersive.com/virus/scan/file"), it)
+            val stringBody: ScanResponse = httpResponse.receive<ScanResponse>()
+            println(httpResponse.status.value)
+            println(stringBody)
+        }
+        println("Normal Scanning File Name ${it.name}, Size ${it.length()/1024} kb, AV scanning time $elapsed")
 
-    println("Advanced Scanning")
-    var advanceScanResponse = scanFileAdvance(Url("https://testapi.cloudmersive.com/virus/scan/file/advanced"), fileList)
-    println(advanceScanResponse.receive<String>())
-    var advanceScanResponseBody: ScanResponse = advanceScanResponse.receive<ScanResponse>()
-    println(advanceScanResponse.status.value)
-    println(advanceScanResponseBody)
+        val elapsedAdvancedScan = measureTimeMillis {
+            println("Advanced Scanning " + it.name)
+            var advanceScanResponse =
+                scanFileAdvance(Url("https://testapi.cloudmersive.com/virus/scan/file/advanced"), it)
+            println(advanceScanResponse.receive<String>())
+            var advanceScanResponseBody: ScanResponse = advanceScanResponse.receive<ScanResponse>()
+            println(advanceScanResponse.status.value)
+            println(advanceScanResponseBody)
+        }
+        println("Advance Scanning File Name ${it.name}, Size ${it.length()/1024} kb, AV scanning time $elapsedAdvancedScan")
+    }
 
 }
 
@@ -35,7 +45,7 @@ private const val API_KEY = "4481ea2e-42e1-429f-9c36-c2bf88a96772"
 
 suspend fun scanFile(
     uploadUrl: Url,
-    uploadFiles: Map<String, File>
+    file: File
 ): HttpResponse {
     val client: HttpClient = HttpClient(Apache){
         install(JsonFeature) {
@@ -49,13 +59,13 @@ suspend fun scanFile(
             append("Apikey", API_KEY)
             append("Accept", ContentType.Application.Json.contentType)
         }
-        body = multipartFormData(uploadFiles)
+        body = multipartFormData(file)
     }
 }
 
 suspend fun scanFileAdvance(
     uploadUrl: Url,
-    uploadFiles: Map<String, File>
+    file: File
 ): HttpResponse {
     val client: HttpClient = HttpClient(Apache){
         install(JsonFeature) {
@@ -76,22 +86,20 @@ suspend fun scanFileAdvance(
             append("allowInsecureDeserialization", "false")
             append("restrictFileTypes", ".pdf,.docx,.png")
         }
-        body = multipartFormData(uploadFiles)
+        body = multipartFormData(file)
     }
 }
 
-private fun HttpRequestBuilder.multipartFormData(uploadFiles: Map<String, File>): MultiPartFormDataContent {
+private fun HttpRequestBuilder.multipartFormData(file: File): MultiPartFormDataContent {
     return MultiPartFormDataContent(
         formData {
-            uploadFiles.entries.forEach {
-                this.appendInput(
-                    key = it.key,
-                    headers = Headers.build {
-                        append(HttpHeaders.ContentDisposition, "filename=${it.value.name}")
-                    },
-                    size = it.value.length()
-                ) { buildPacket { writeFully(it.value.readBytes()) } }
-            }
+            this.appendInput(
+                key = "1",
+                headers = Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                },
+                size = file.length()
+            ) { buildPacket { writeFully(file.readBytes()) } }
         }
     )
 }
